@@ -1,10 +1,10 @@
+import { QuizzerProtocol as QP } from '@tooxoot/quizzer-protocol'
 import { createServer } from 'http'
-import { Socket } from 'net'
-import { ClientSocket, GuestSocket, Handlers, Sockets, State } from './Server'
+import { ClientSocket, GuestSocket, Handlers, Sockets } from './Server'
 import * as WebSocket from 'ws'
 
 // server logic //
-const state: State = {
+const state: QP.State = {
   catalogue: {
     questions: [
       {
@@ -28,7 +28,11 @@ const state: State = {
     ],
   },
   currentQuestionIdx: 0,
-  givenAnswers: {},
+  leaderBoard: {},
+  lockQuestion: false,
+  showLeaderBoard: false,
+  showRightAnswers: false,
+  timestamp: Date.now(),
 }
 
 const sockets: Sockets = {
@@ -56,6 +60,8 @@ const initiate = (socket: WebSocket, name: string) => {
     socket.on('close', () => {
       sockets.host = null
     })
+
+    clientSocket.send({ type: QP.Server.Message.TYPES.PONG, state })
   } else if (socket.protocol === 'guest' && name) {
     const guestSocket: GuestSocket = {
       userName: name,
@@ -68,12 +74,20 @@ const initiate = (socket: WebSocket, name: string) => {
     socket.on('close', () => {
       sockets.guests.delete(guestSocket)
     })
+
+    guestSocket.send({ type: QP.Server.Message.TYPES.PONG, state })
   } else {
     socket.close(1002, 'protocol not sopported')
   }
 }
 
-const server = createServer((_, response) => {
+const server = createServer((request, response) => {
+  if (request.url === '/catalogue.json') {
+    response.statusCode = 200
+    response.setHeader('Access-Control-Allow-Origin', '*')
+    response.end(JSON.stringify(state.catalogue))
+    return
+  }
   response.writeHead(404)
   response.end()
 })

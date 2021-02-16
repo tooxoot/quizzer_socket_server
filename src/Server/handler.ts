@@ -1,128 +1,138 @@
-import { ClientSocket, Server, Sockets, State } from '.'
-import { GuestClient, HostClient } from '../Clients'
-import { GuestSocket } from './types'
+import { QuizzerProtocol as QP } from '@tooxoot/quizzer-protocol'
+import { ClientSocket, GuestSocket, Sockets } from '.'
 
 type Handler = (
-  message: GuestClient.Message | HostClient.Message,
-  state: State,
+  message: QP.GuestClient.Message | QP.HostClient.Message,
+  state: QP.State,
   clients: Sockets,
   currentClient: ClientSocket | GuestSocket
-) => void
+) => QP.Server.Message.TYPES
 
-const handlePong: Handler = (_m, _s, _c, currentSocket): void => {
-  currentSocket.send({ type: Server.Message.TYPES.PONG })
+const handlePing: Handler = (_m, state, _c, currentSocket) => {
+  currentSocket.send({ type: QP.Server.Message.TYPES.PONG, state })
+
+  return undefined
+}
+
+const pushState = (type: QP.Server.Message.TYPES, state: QP.State, clients: Sockets) => {
+  if (!type) return
+
+  const m: QP.Server.Message = {
+    type,
+    state,
+  }
+
+  clients.guests.forEach(g => g.send(m))
+  clients.host.send(m)
+}
+
+const updateLeaderboard = (state: QP.State) => {
+  for (const question of state.catalogue.questions) {
+    for (const userId in state.leaderBoard) {
+      const entry = state.leaderBoard[userId]
+      if (entry.givenAnswers[question.id] === question.rightAnswer) {
+        entry.total += 1
+      }
+    }
+  }
+}
+
+const stamp = (state: QP.State) => {
+  state.timestamp = Date.now()
 }
 
 export namespace Handlers {
   export namespace HostMessage {
-    const handleNextQuestion: Handler = (_m, state, clients): void => {
+    const handleNextQuestion: Handler = (_m, state, clients) => {
       state.currentQuestionIdx++
+      stamp(state)
 
-      const m: Server.Message = {
-        type: Server.Message.TYPES.SHOW_QUESTION,
-        idx: state.currentQuestionIdx,
-      }
-
-      clients.guests.forEach(gs => gs.send(m))
-      clients.host.send(m)
+      return QP.Server.Message.TYPES.SHOW_QUESTION
     }
 
-    const handleStopQuestion: Handler = (_m, state, clients): void => {
-      const message: Server.Message = {
-        type: Server.Message.TYPES.SHOW_ANSWER,
-        revealAnswer: false,
-      }
+    const handleStopQuestion: Handler = (_m, state, clients) => {
+      state.lockQuestion = true
+      stamp(state)
 
-      clients.guests.forEach(gs => {
-        const guestMessage: Server.Message = { ...message }
-        const givenAnswers = state.givenAnswers[gs.userName]
-        const givenAnswer = givenAnswers && givenAnswers[state.currentQuestionIdx]
-
-        guestMessage.givenAnswer = givenAnswer
-
-        gs.send(guestMessage)
-      })
-
-      clients.host.send(message)
+      return QP.Server.Message.TYPES.SHOW_ANSWER
     }
 
-    const constructLeaderborad = ({ givenAnswers, catalogue }: State): [string, ...number[]][] => {
-      const board = Object.entries(givenAnswers).map(([name, answers]) => {
-        const sum = answers.reduce(
-          (sum, givenAnswer, idx) =>
-            givenAnswer === catalogue.questions[idx].rightAnswer ? sum + 1 : sum,
-          0
-        )
+    const handleShowLeaderboard: Handler = (_m, state, clients) => {
+      state.showLeaderBoard = true
+      stamp(state)
 
-        return [name, ...answers, sum]
-      })
-
-      return board as [string, ...number[]][]
+      return QP.Server.Message.TYPES.SHOW_LEADER_BOARD
     }
 
-    const handleShowLeaderboard: Handler = (_m, state, clients): void => {
-      const m: Server.Message = {
-        type: Server.Message.TYPES.SHOW_LEADER_BOARD,
-        leaderBoard: constructLeaderborad(state),
-      }
-
-      clients.guests.forEach(gs => gs.send(m))
-      clients.host.send(m)
-    }
-
-    const handlers: Record<HostClient.Message.TYPES, Handler> = {
-      [HostClient.Message.TYPES.PING]: handlePong,
-      [HostClient.Message.TYPES.NEXT_QUESTION]: handleNextQuestion,
-      [HostClient.Message.TYPES.STOP_QUESTION]: handleStopQuestion,
-      [HostClient.Message.TYPES.SHOW_LEADERBOARD]: handleShowLeaderboard,
+    const handlers: Record<QP.HostClient.Message.TYPES, Handler> = {
+      [QP.HostClient.Message.TYPES.PING]: handlePing,
+      [QP.HostClient.Message.TYPES.NEXT_QUESTION]: handleNextQuestion,
+      [QP.HostClient.Message.TYPES.STOP_QUESTION]: handleStopQuestion,
+      [QP.HostClient.Message.TYPES.SHOW_LEADERBOARD]: handleShowLeaderboard,
     }
 
     export const get = (
-      state: State,
+      state: QP.State,
       clients: Sockets,
       currentClient: ClientSocket | GuestSocket
-    ) => (data: unknown): void => {
-      let message: HostClient.Message
+    ) => (data: unknown): QP.Server.Message.TYPES => {
+      let message: QP.HostClient.Message
       try {
-        message = HostClient.Message.parse(data)
+        message = QP.HostClient.Message.parse(data)
       } catch (e) {
         console.error('failed HostClient.Message.parse', e)
         return
       }
 
-      handlers[message.type](message, state, clients, currentClient)
+      const msgType = handlers[message.type](message, state, clients, currentClient)
+      pushState(msgType, state, clients)
     }
   }
 
   export namespace GuestMessage {
     const handleSubmitAnswer: Handler = (
-      message: GuestClient.Message.SubmitAnswer,
+      message: QP.GuestClient.Message.SubmitAnswer,
       state,
       _c,
       currentSocket: GuestSocket
-    ): void => {
-      if (!state.givenAnswers[currentSocket.userName])
-        state.givenAnswers[currentSocket.userName] = []
-      state.givenAnswers[currentSocket.userName][state.currentQuestionIdx] = message.answer
+    ) => {
+      let userEntry = state.leaderBoard[currentSocket.userName]
+      if (!userEntry) {
+        userEntry = {
+          givenAnswers: {},
+          total: 0,
+        }
+
+        state.leaderBoard[currentSocket.userName] = userEntry
+      }
+
+      const currentId = state.catalogue.questions[state.currentQuestionIdx].id
+      userEntry.givenAnswers[currentId] = message.answer
+
+      updateLeaderboard(state)
+      stamp(state)
+
+      return QP.Server.Message.TYPES.PONG
     }
 
-    const handlers: Record<GuestClient.Message.TYPES, Handler> = {
-      [GuestClient.Message.TYPES.PING]: handlePong,
-      [GuestClient.Message.TYPES.SUBMIT_ANSWER]: handleSubmitAnswer,
+    const handlers: Record<QP.GuestClient.Message.TYPES, Handler> = {
+      [QP.GuestClient.Message.TYPES.PING]: handlePing,
+      [QP.GuestClient.Message.TYPES.SUBMIT_ANSWER]: handleSubmitAnswer,
     }
 
-    export const get = (state: State, clients: Sockets, currentSocket: ClientSocket) => (
+    export const get = (state: QP.State, clients: Sockets, currentSocket: ClientSocket) => (
       data: unknown
     ): void => {
-      let message: GuestClient.Message
+      let message: QP.GuestClient.Message
       try {
-        message = GuestClient.Message.parse(data)
+        message = QP.GuestClient.Message.parse(data)
       } catch (e) {
         console.error('failed GuestClient.Message.parse', e)
         return
       }
 
-      handlers[message.type](message, state, clients, currentSocket)
+      const msgType = handlers[message.type](message, state, clients, currentSocket)
+      pushState(msgType, state, clients)
     }
   }
 }

@@ -1,27 +1,8 @@
-import { Server } from './'
-
-export interface Question {
-  id: string
-  prompt: string
-  answers: string[]
-  rightAnswer?: number
-}
-
-export interface Catalogue {
-  questions: Question[]
-}
-
-export interface GivenAnswers extends Record<string, number[]> {}
-
-export interface State {
-  catalogue: Catalogue
-  givenAnswers: GivenAnswers
-  currentQuestionIdx: number
-}
+import { QuizzerProtocol as QP } from '@tooxoot/quizzer-protocol'
 
 export interface ClientSocket {
   send: (
-    a: Server.Message | string,
+    a: QP.Server.Message | string,
     b?: {} | ((err?: Error) => void),
     c?: (err?: Error) => void
   ) => void

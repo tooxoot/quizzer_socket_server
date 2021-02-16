@@ -4,13 +4,24 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "dev": "node dist/app.js"
+    "dev": "nodemon"
   },
   "dependencies": {
+    "@tooxoot/quizzer-protocol": "^1.0.4",
     "ws": "^7.4.2"
   },
   "devDependencies": {
     "@types/ws": "^7.4.0",
+    "nodemon": "^2.0.7",
     "typescript": "^4.1.3"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "__test__/*",
+      "dist/*"
+    ],
+    "ext": "ts",
+    "delay": "1500",
+    "exec": "tsc && node ./dist/app.js"
   }
 }
