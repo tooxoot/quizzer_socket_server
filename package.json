@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "dev": "nodemon",
-    "test": "ava"
+    "test": "ava --verbose --timeout=20s"
   },
   "dependencies": {
     "@tooxoot/quizzer-protocol": "^1.0.4",
