@@ -45,6 +45,9 @@ export namespace Handlers {
   export namespace HostMessage {
     const handleNextQuestion: Handler = (_m, state, clients) => {
       state.currentQuestionIdx++
+      state.lockQuestion = false
+      state.showLeaderBoard = false
+      state.showRightAnswers = false
       stamp(state)
 
       return QP.Server.Message.TYPES.SHOW_QUESTION
@@ -59,6 +62,7 @@ export namespace Handlers {
 
     const handleShowLeaderboard: Handler = (_m, state, clients) => {
       state.showLeaderBoard = true
+      state.lockQuestion = true
       stamp(state)
 
       return QP.Server.Message.TYPES.SHOW_LEADER_BOARD
