@@ -23,10 +23,14 @@ const pushState = (type: QP.Server.Message.TYPES, state: QP.State, clients: Sock
   }
 
   clients.guests.forEach(g => g.send(m))
-  clients.host.send(m)
+  clients.host?.send(m)
 }
 
 const updateLeaderboard = (state: QP.State) => {
+  for (const userId in state.leaderBoard) {
+    state.leaderBoard[userId].total = 0
+  }
+
   for (const question of state.catalogue.questions) {
     for (const userId in state.leaderBoard) {
       const entry = state.leaderBoard[userId]
