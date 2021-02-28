@@ -1,0 +1,65 @@
+name: buil-and-publish
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Login to DockerHub
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v1
+        with:
+          registry: ghcr.io
+          username: ${{ github.repository_owner }}
+          password: ${{ secrets.CR_PAT }}
+
+      - name: Build image target build
+        id: docker_build_build
+        uses: docker/build-push-action@v2
+        with:
+          target: build
+          build-args: GITHUB_READ_PACKAGES_TOKEN=${{ secrets.CR_PAT }}
+          tags: ghcr.io/tooxoot/quizzer-server:build
+      
+      - name: Build image target test
+        id: docker_build_test
+        uses: docker/build-push-action@v2
+        with:
+          target: test
+          build-args: GITHUB_READ_PACKAGES_TOKEN=${{ secrets.CR_PAT }}
+          cache-from: ghcr.io/tooxoot/quizzer-server:build
+          tags: ghcr.io/tooxoot/quizzer-server:test
+
+      - name: Build image target release
+        id: docker_build_release
+        uses: docker/build-push-action@v2
+        with:
+          target: release
+          build-args: GITHUB_READ_PACKAGES_TOKEN=${{ secrets.CR_PAT }}
+          cache-from: ghcr.io/tooxoot/quizzer-server:test
+          tags: ghcr.io/tooxoot/quizzer-server:release
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build_build.outputs.digest }}
+        run: echo ${{ steps.docker_build_test.outputs.digest }}
+        run: echo ${{ steps.docker_build_release.outputs.digest }}
+      
+      - name: Run test container
+        run: docker run -it ghcr.io/tooxoot/quizzer-server:test
+
+      - name: Push release image
+        uses: docker/build-push-action@v2
+        with:
+          push: true
+          cache-from: ghcr.io/tooxoot/quizzer-server:release
+          tags: |
+            ghcr.io/tooxoot/quizzer-server:latest
