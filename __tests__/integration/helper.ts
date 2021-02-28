@@ -10,13 +10,13 @@ export const getDefaultState = (): QP.State => ({
         rightAnswer: 0,
       },
       {
-        id: '1',
+        id: '2',
         prompt: '1?',
         answers: ['A', 'B', 'C', 'D'],
         rightAnswer: 2,
       },
       {
-        id: '1',
+        id: '3',
         prompt: '1?',
         answers: ['A', 'B', 'C', 'D'],
         rightAnswer: 3,
