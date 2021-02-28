@@ -16,7 +16,7 @@ const getPromise = <T>(): PromiseHandle<T> => {
 export class Container {
   private mappedPort: number
   public container: StartedTestContainer
-  private readonly image: string = process.env.IMAGE || 'quizzer-server:release'
+  private readonly image: string = process.env.IMAGE || 'ghcr.io/tooxoot/quizzer-server:release'
   private readonly port: number = Number(process.env.PORT) || 8080
 
   public async init() {
@@ -30,7 +30,7 @@ export class Container {
     if (!this.mappedPort || !this.container) throw Error('Container must be initialized')
 
     const ws = new WebSocket(
-      `ws://localhost:${this.mappedPort}/${username}`,
+      `ws://${this.container.getHost()}:${this.mappedPort}/${username}`,
       username ? 'guest' : 'host'
     )
 

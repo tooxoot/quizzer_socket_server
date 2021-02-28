@@ -6,6 +6,11 @@ COPY --chown=node . .
 RUN npm install --only=prod
 RUN npm run build
 
+FROM build as test
+WORKDIR /app
+Run npm install
+CMD ["npm", "run", "test"]
+
 FROM node:14-alpine as release
 WORKDIR /app
 COPY --from=build /app/node_modules node_modules
