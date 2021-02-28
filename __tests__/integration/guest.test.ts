@@ -9,7 +9,7 @@ test.before(async () => {
   container = await new Container().init()
 })
 
-test('Host connect and ping', async t => {
+test('Guest submit multiple answers', async t => {
   let ws = container.getSocket('testuser')
   const GTYPES = QP.GuestClient.Message.TYPES
 

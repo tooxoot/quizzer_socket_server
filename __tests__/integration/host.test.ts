@@ -9,7 +9,7 @@ test.before(async () => {
   container = await new Container().init()
 })
 
-test('Host connect and ping', async t => {
+test('Host cycle through questions and leaderboard', async t => {
   let ws = container.getSocket()
   const HTYPES = QP.HostClient.Message.TYPES
 
