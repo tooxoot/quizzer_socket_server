@@ -30,6 +30,7 @@ export class Container {
     })
     ws.on('close', (n, r) => resClose([n, r]))
 
+    const messages: QP.Server.Message[] = []
     let resMessage, rejMessage
     let message: Promise<QP.Server.Message>
     const resetMsg = () => {
@@ -40,15 +41,19 @@ export class Container {
     }
     resetMsg()
     ws.on('message', data => {
-      resMessage(JSON.parse(data as string))
+      const msg = JSON.parse(data as string)
+      messages.push(msg)
+      resMessage(msg)
       resetMsg()
     })
 
-    const send = (data: any) => ws.send(JSON.stringify(data))
+    const send = (data: QP.HostClient.Message | QP.GuestClient.Message) =>
+      ws.send(JSON.stringify(data))
 
     return {
       close,
       message,
+      messages,
       send,
       disconnect: () => ws.close(),
     }
