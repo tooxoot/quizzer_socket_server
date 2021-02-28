@@ -29,6 +29,9 @@
     "exec": "tsc && node ./dist/app.js"
   },
   "ava": {
+    "files": [
+      "**/*.test.ts"
+    ],
     "extensions": [
       "ts"
     ],
