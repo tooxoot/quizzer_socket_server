@@ -1,4 +1,21 @@
 import { QuizzerProtocol as QP } from '@tooxoot/quizzer-protocol'
+import { Container } from './container'
+
+type SocketPromise = ReturnType<Container['getSocket']>
+type Socket = SocketPromise extends Promise<infer T> ? T : unknown
+export const synchronize = async (...socketPromises: SocketPromise[]) => {
+  const sockets = await Promise.all(socketPromises)
+  let idx = 1
+
+  return sockets.map(s => ({
+    ...s,
+    send: (msg: QP.HostClient.Message | QP.GuestClient.Message) => {
+      idx++
+      s.send(msg)
+      return Promise.all(sockets.map(s => s.getCountPromise(idx)))
+    },
+  }))
+}
 
 export const getDefaultState = (): QP.State => ({
   catalogue: {

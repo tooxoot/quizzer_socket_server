@@ -10,10 +10,8 @@ test.before(async () => {
 })
 
 test('Host cycle through questions and leaderboard', async t => {
-  let ws = container.getSocket()
+  let ws = await container.getSocket()
   const HTYPES = QP.HostClient.Message.TYPES
-
-  await ws.message
 
   const clientMsgs = [
     HTYPES.PING,
@@ -27,8 +25,7 @@ test('Host cycle through questions and leaderboard', async t => {
   ]
   clientMsgs.map(type => ({ type })).forEach(ws.send)
 
-  ws.disconnect()
-  await ws.close
+  await ws.disconnect()
 
   t.is(ws.messages.length, clientMsgs.length + 1, 'received too few messages')
   t.true(hasAscendingTimestamps(ws.messages))
@@ -107,5 +104,5 @@ test('Host cycle through questions and leaderboard', async t => {
 })
 
 test.after(async () => {
-  await container.stop
+  await container.stop()
 })

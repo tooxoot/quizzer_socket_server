@@ -9,37 +9,37 @@ test.before(async () => {
 })
 
 test('Host connect and ping', async t => {
-  let ws = container.getSocket()
+  let ws = await container.getSocket()
 
-  const msg1 = await ws.message
-  t.is(msg1.type, 'PONG')
   ws.send({ type: QP.HostClient.Message.TYPES.PING })
-  const msg2 = await ws.message
-  t.is(msg2.type, 'PONG')
-  t.is(msg1.state, msg2.state)
 
-  ws.disconnect()
-  await ws.close
+  await ws.disconnect()
+
+  const [msg1, msg2] = ws.messages
+
+  t.is(msg1.type, 'PONG')
+  t.is(msg2.type, 'PONG')
+  t.deepEqual(msg1.state, msg2.state)
 
   t.pass()
 })
 
 test('Guest connect and ping', async t => {
-  let ws = container.getSocket('testuser')
+  let ws = await container.getSocket('testuser')
 
-  const msg1 = await ws.message
-  t.is(msg1.type, 'PONG')
   ws.send({ type: QP.GuestClient.Message.TYPES.PING })
-  const msg2 = await ws.message
-  t.is(msg2.type, 'PONG')
-  t.is(msg1.state, msg2.state)
 
-  ws.disconnect()
-  await ws.close
+  await ws.disconnect()
+
+  const [msg1, msg2] = ws.messages
+
+  t.is(msg1.type, 'PONG')
+  t.is(msg2.type, 'PONG')
+  t.deepEqual(msg1.state, msg2.state)
 
   t.pass()
 })
 
 test.after(async () => {
-  await container.stop
+  await container.stop()
 })

@@ -10,10 +10,8 @@ test.before(async () => {
 })
 
 test('Guest submit multiple answers', async t => {
-  let ws = container.getSocket('testuser')
+  let ws = await container.getSocket('testuser')
   const GTYPES = QP.GuestClient.Message.TYPES
-
-  await ws.message
 
   const clientMsgs: QP.GuestClient.Message[] = [
     { type: GTYPES.PING },
@@ -23,8 +21,7 @@ test('Guest submit multiple answers', async t => {
   ]
   clientMsgs.forEach(ws.send)
 
-  ws.disconnect()
-  await ws.close
+  await ws.disconnect()
 
   t.is(ws.messages.length, clientMsgs.length + 1, 'received too few messages')
   t.true(hasAscendingTimestamps(ws.messages))
