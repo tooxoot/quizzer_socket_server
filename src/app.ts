@@ -99,3 +99,8 @@ const ws = new WebSocket.Server({ server })
 ws.on('connection', (client, request) => {
   initiate(client, request.url.substring(1))
 })
+
+process.on('SIGINT', () => {
+  console.log('Caught interrupt signal')
+  process.exit()
+})
