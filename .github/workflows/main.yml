@@ -29,7 +29,7 @@ jobs:
           target: build
           build-args: GITHUB_READ_PACKAGES_TOKEN=${{ secrets.CR_PAT }}
           tags: ghcr.io/tooxoot/quizzer-server:build
-      
+
       - name: Build image target test
         id: docker_build_test
         uses: docker/build-push-action@v2
@@ -49,10 +49,11 @@ jobs:
           tags: ghcr.io/tooxoot/quizzer-server:release
 
       - name: Image digest
-        run: echo ${{ steps.docker_build_build.outputs.digest }}
-        run: echo ${{ steps.docker_build_test.outputs.digest }}
-        run: echo ${{ steps.docker_build_release.outputs.digest }}
-      
+        run: |
+          echo ${{ steps.docker_build_build.outputs.digest }}
+          echo ${{ steps.docker_build_test.outputs.digest }}
+          echo ${{ steps.docker_build_release.outputs.digest }}
+
       - name: Run test container
         run: docker run -it ghcr.io/tooxoot/quizzer-server:test
 
