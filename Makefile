@@ -27,7 +27,7 @@ clean-prune:
 	true
 
 run-test:
-	docker run -it -e IMAGE=${IMAGENAME}:release -v /var/run/docker.sock:/var/run/docker.sock ${IMAGENAME}:test
+	docker run -e IMAGE=${IMAGENAME}:release -v /var/run/docker.sock:/var/run/docker.sock ${IMAGENAME}:test
 
 run-release:
 	docker run -it -p 8080:8080 ${IMAGENAME}:release
