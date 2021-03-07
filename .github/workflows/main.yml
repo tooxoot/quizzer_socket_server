@@ -52,9 +52,9 @@ jobs:
           target: release
           build-args: GITHUB_READ_PACKAGES_TOKEN=${{ secrets.CR_PAT }}
           cache-from: ghcr.io/tooxoot/quizzer-server:test
-          tags:
-            - ghcr.io/tooxoot/quizzer-server:release
-            - ghcr.io/tooxoot/quizzer-server:latest
+          tags: |
+            ghcr.io/tooxoot/quizzer-server:release
+            ghcr.io/tooxoot/quizzer-server:latest
 
       - name: Image digest
         run: |
