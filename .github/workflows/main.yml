@@ -58,7 +58,7 @@ jobs:
           echo ${{ steps.docker_build_release.outputs.digest }}
 
       - name: Run test container
-        run: docker run -it ghcr.io/tooxoot/quizzer-server:test
+        run: make run-test
 
       - name: Push release image
         uses: docker/build-push-action@v2
