@@ -67,6 +67,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           push: true
+          target: release
           cache-from: ghcr.io/tooxoot/quizzer-server:release
           tags: |
             ghcr.io/tooxoot/quizzer-server:latest
